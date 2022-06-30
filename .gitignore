@@ -1,1 +1,6 @@
 .DS_Store
+/pyplm.egg-info
+# pyplm.egg-info/*
+/*/__pycache__
+/*/*/__pycache__
+# /pyplm/_pycache_
