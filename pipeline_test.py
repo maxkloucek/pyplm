@@ -1,10 +1,11 @@
 import os
 import numpy as np
 import matplotlib.pyplot as plt
-from pyplm.pipeline import pipeline
+from pyplm.pipelines import data_pipeline
 import json
 import h5py
 import glob
+
 
 def get_sample_trajectories(dataset):
     files = glob.glob(os.path.join(dataset, '*'))
@@ -32,9 +33,12 @@ plt.style.use("/Users/mk14423/Dropbox/custom.mplstyle")
 #     '/Users/mk14423/Desktop/PaperData/HCP_data_Ryota/allRest')
 labels, data = get_random_trajectories(B=500, N=10)
 print(labels, data.shape)
-file = 'testdata/test_whole.hdf5'
-group = '2D_ising-multistate'
-
+file = '/Users/mk14423/Desktop/Data/0_Thesis/example_data_small.hdf5'
+group = '1D_ising_N101'
+# with h5py.File(file, 'a') as fin:
+#     print(fin.keys())
+#     del fin[group]
+# exit()
 # mod_choices = [
 #         # '1D_ISING_PBC',
 #         # '2D_ISING_PBC',
@@ -49,20 +53,20 @@ group = '2D_ising-multistate'
 #     {'B_eq': 1e4, 'B_sample': 1e3, 'nChains': 1}
 #     ]
 
-Ts = [0.5, 1, 2.25, 5]
-mod_choices = ['2D_ISING_PBC' for _ in Ts]
-mod_args = [{'L': 8, 'T': T, 'h': 0, 'jval': 1} for T in Ts]
-sim_args = [{'B_eq': 1e4, 'B_sample': 2e3, 'nChains': 6} for _ in Ts]
+Ts = [1]
+mod_choices = ['1D_ISING_PBC' for _ in Ts]
+mod_args = [{'L': 101, 'T': T, 'h': 0, 'jval': 1} for T in Ts]
+sim_args = [{'B_eq': 1e4, 'B_sample': 1e4, 'nChains': 6} for _ in Ts]
 
 
-# plm_pipeline.write_data(data, labels)33
-plm_pipeline = pipeline(file, group)
+# plm_pipeline.write_data(data, labels)
+plm_pipeline = data_pipeline(file, group)
 plm_pipeline.generate_model(mod_choices, mod_args)
 plm_pipeline.simulate_data(sim_args, n_jobs=6)
 plm_pipeline.infer(Parallel_verbosity=5)
-plm_pipeline.correct_plm()
-plm_pipeline.ficticiousT_sweep(
-    np.linspace(0.5, 1.5, 50), 1e4, 6)
+# plm_pipeline.correct_plm()
+# plm_pipeline.ficticiousT_sweep(
+#     np.linspace(0.1, 4, 200), 1e4, 6)
 
 # let's do a whole pipline test!
 # and then do a sweep
