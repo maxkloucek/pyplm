@@ -24,7 +24,9 @@ def multimodel_sim(mod_array, sim_args_list, n_jobs, verbose):
 def multichain_sim(model, n_jobs, vset, B_eq, B_sample, nChains):
     # nReps = 6
     # vSet = 0
-    saveFreq = 1e1
+    # it's got the B_eq in here!! make sure you're sensible when changing this!
+    # saving every N steps now!
+    saveFreq = 1e1 # 1e1
     cyclesEQ = B_eq * saveFreq
     cyclesPROD = B_sample * saveFreq
     # traj = fullRun_serial(model, cyclesEQ, cyclesPROD, saveFreq)

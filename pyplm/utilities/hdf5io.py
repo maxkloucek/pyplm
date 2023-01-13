@@ -1,11 +1,6 @@
 import os
-import glob
 import h5py
-import json
-import numpy as np
-# from joblib import Parallel
-# from time import perf_counter
-# from pyplm.inference.pseudolikelihoodmax import plm
+
 
 def write_models_to_hdf5(
         file_name, group_name,
@@ -16,7 +11,7 @@ def write_models_to_hdf5(
         fopen_kwrds = {
             'mode': 'a',
         }
-        open_mode = 'a'
+        # open_mode = 'a'
     else:
         fopen_kwrds = {
             'mode': 'w',
@@ -93,24 +88,26 @@ def write_configurations_to_hdf5(
 
 def write_sweep_to_hdf5(
         file_name, group_name,
-        alphas, sweep_trajectories):
+        temps, sweep_trajectories):
     with h5py.File(file_name, 'a') as fout:
         group = fout.require_group(group_name)
-
+        print('Saving sweep, dtype is', sweep_trajectories.dtype)
         alphas_ds = group.require_dataset(
-            "sweep-alphas",
-            shape=alphas.shape,
-            dtype=alphas.dtype,
+            "sweep-temps",
+            shape=temps.shape,
+            dtype=temps.dtype,
             compression="gzip")
-        alphas_ds[()] = alphas
+        alphas_ds[()] = temps
 
         sweep_ds = group.require_dataset(
             "sweep-trajectories",
             shape=sweep_trajectories.shape,
             dtype=sweep_trajectories.dtype,
-            compression="gzip")
+            compression="gzip", compression_opts=9)
         sweep_ds[()] = sweep_trajectories
 
+
+# setting up the sweep properly!
 
 def get_configurations(file_name, group_name):
     with h5py.File(file_name, 'r') as fin:
@@ -126,7 +123,7 @@ def get_configurations(file_name, group_name):
         else:
             config_array = configs_ds[()]
         nDatasets, nSamples, nSpins = config_array.shape
-        print(nDatasets, nSamples, nSpins)
+        # print(nDatasets, nSamples, nSpins)
         return config_array
 
 

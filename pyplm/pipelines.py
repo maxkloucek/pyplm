@@ -1,23 +1,19 @@
 import os
 import h5py
 import numpy as np
+import pandas as pd
 from joblib.externals.loky import get_reusable_executor
-from scipy.interpolate import UnivariateSpline
+from time import perf_counter
 
 import pyplm.utilities.hdf5io as io
 import pyplm.inference as inference
 from pyplm import simulate as sim
 from pyplm import models
 from pyplm.utilities import tools
+from pyplm import utilities
+from pyplm.simulate import multichain_sim
 
-import matplotlib.pyplot as plt
 
-# pipeline will be a class.
-# it's faster to run functions outside of class definition is what
-# I've noticed, i.e. have them in their own helper space!
-# should all write to a hdf5 file, and a group in that file
-# that's how I've decided it works best!
-# always have nDims = 3 so that I can save a sweep as well!
 class data_pipeline:
     def __init__(self, file_name, group_name):
         self.fname = file_name
@@ -96,11 +92,11 @@ class data_pipeline:
             mod_name='inferredModels'):
         get_reusable_executor().shutdown(wait=True)
         print('---Running PLM---')
-
+        t0 = perf_counter()
         configs_array = io.get_configurations(self.fname, self.gname)
         mod_array, mod_md = inference.multimodel_inf(
             configs_array, nParallel_jobs, Parallel_verbosity)
-        print(mod_array.shape, mod_md)
+
         io.write_models_to_hdf5(
             self.fname,
             self.gname,
@@ -108,15 +104,41 @@ class data_pipeline:
             mod_array,
             mod_md
         )
+        t1 = perf_counter()
         print('-----------------')
+        print(f'PLM time taken: = {t1-t0:.3f}s')
 
-    def correct_plm(
-            self, mod_name='correctedModels'):
-        print('Running correction')
+    def correct_firth(
+            self,
+            nParallel_jobs=6, Parallel_verbosity=0,
+            mod_name='firthModels'):
+        get_reusable_executor().shutdown(wait=True)
+        print('---Running Firth Correction ---')
+        t0 = perf_counter()
+        configs_array = io.get_configurations(self.fname, self.gname)
+        mod_array, mod_md = inference.multimodel_inf_firth(
+            configs_array, nParallel_jobs, Parallel_verbosity)
+
+        io.write_models_to_hdf5(
+            self.fname,
+            self.gname,
+            mod_name,
+            mod_array,
+            mod_md
+        )
+        t1 = perf_counter()
+        print('-----------------')
+        print(f'Firth Correction time taken: = {t1-t0:.3f}s')
+
+    def correct_C2(
+            self, mod_name='c2Models'):
+        print('Running C2 Correction')
+        t0 = perf_counter()
         infmod_array, _ = io.get_models(
             self.fname, self.gname, 'inferredModels')
         configs_array = io.get_configurations(self.fname, self.gname)
-        cormod_array, cormod_md = inference.correction(infmod_array, configs_array)
+        cormod_array, cormod_md = inference.correction_C2(
+                infmod_array, configs_array)
         # have a look at the md of the other things
         # and save something similar, i.e. json dictionary string!
         # sweet it works!
@@ -128,7 +150,31 @@ class data_pipeline:
             cormod_array,
             cormod_md
         )
+        t1 = perf_counter()
         print('-----------------')
+        print(f'C2 time taken: = {t1-t0:.3f}s')
+
+    def correct_jackknife(
+            self, mod_name='correctedModels_jacknife'):
+        print('Running Jacknife Correction')
+        t0 = perf_counter()
+        infmod_array, _ = io.get_models(
+            self.fname, self.gname, 'inferredModels')
+        configs_array = io.get_configurations(self.fname, self.gname)
+
+        jacknife_models_array, jn_metadata = inference.correction_jacknife(
+                infmod_array, configs_array)
+
+        io.write_models_to_hdf5(
+            self.fname,
+            self.gname,
+            mod_name,
+            jacknife_models_array,
+            jn_metadata
+        )
+        t1 = perf_counter()
+        print('-----------------')
+        print(f'Jackknife time taken: = {t1-t0:.3f}s')
 
     # currently cannot vary alpha across models!
     def ficticiousT_sweep(
@@ -139,193 +185,131 @@ class data_pipeline:
             self.fname, self.gname, mod_name)
         # might have to change to corrected Models!
         # for full analysis
-        sweep_trajectories = sim.TempSweep(mod_array, alphas, nSamples, nChains)
-        print(sweep_trajectories.shape)
+        sweep_trajectories = sim.TempSweep(
+                mod_array, alphas, nSamples, nChains)
         io.write_sweep_to_hdf5(
             self.fname, self.gname,
             alphas, sweep_trajectories)
 
+    def threshold_sweep(
+            self, nSamples, nChains,
+            nThresholds=50,
+            symmetric=True,
+            mod_name='inferredModels', sweep_gname='sweepTH_symmetric'):
 
+        nSamples_eq = int(1e3)
+        nSamples = int(nSamples)
 
-from pyplm.analyse import models as ma
+        mod_array, _ = io.get_models(
+            self.fname, self.gname, mod_name)
+        print(mod_array.shape)
 
-# pipeline that takes in models and transforms them along
-# the way? that probably makes it make the most sense?
-# so call it dataset? also I use the word models too often!
-# i.e. cluttered namespace!
-class model_pipeline:
-    def __init__(self, file_name, group_name, model_name):
-        self.fname = file_name
-        self.gname = group_name
-        self.dname = model_name
-
-        with h5py.File(file_name, 'r') as fin:
-            group = fin[group_name]
-            metadata = group[model_name + '_metadata'].asstr()[()]
-            models = group[model_name][()]
-        # models = models[0:3]
-        self.datasets = models
-        self.md = metadata
-        n1, n2, n3 = models.shape
-        if n2 != n2:
-            print('array does not contain square matricies')
+        nMods, N, N = mod_array.shape
+        if nMods != 1:
+            print('WHATCH OUT, IVE ONLY WRITTEN THIS CODE TO WORK WITH 1MOD!')
             exit()
 
-    def split_hemispheres(self, which='both'):
-        mods_ll, mods_rr = ma.get_split_hemispheres(
-            self.datasets)
-        if which == 'left':
-            self.datasets = mods_ll
-        if which == 'right':
-            self.datasets = mods_rr
-        if which == 'both':
-            print('unchanged')
+        base_model = mod_array[0, :, :]
+        min = np.abs(base_model).min()
+        min = min - (0.01 * min)
+        logmin = np.log10(min)
+        max = np.abs(base_model).max()
+        logmax = np.log10(max)
+        thresholds = np.logspace(logmin, logmax, nThresholds)
 
-    def select_parameters(self, parameter_name):
-        hs, Js = ma.split_parameters(self.datasets)
-        if parameter_name == 'h':
-            self.datasets = hs
-        if parameter_name == 'J':
-            self.datasets = Js
+        print(thresholds.shape)
+        sweep_traj_shape = (nThresholds, nChains, nSamples, N)
+        print(sweep_traj_shape)
 
-        means = np.nanmean(self.datasets, axis=1)
-        stds = np.nanstd(self.datasets, axis=1)
-        return np.vstack((means, stds))
+        with h5py.File(self.fname, 'a') as fout:
+            print(fout[self.gname].keys())
+            g = fout[self.gname].require_group(sweep_gname)
+            param_ds = g.require_dataset(
+                "parameters",
+                shape=thresholds.shape,
+                dtype=thresholds.dtype,
+                compression="gzip", compression_opts=9)
+            param_ds[()] = thresholds
+            g.require_dataset(
+                "trajectories",
+                shape=sweep_traj_shape,
+                dtype=float,
+                compression="gzip", compression_opts=9)
 
-    def transform_to_distributions(
-        self, filter_level, **histargs):
-        distributions = []
-        for params in self.datasets:
-            # print(params.shape)
-            x, y = ma.centered_histogram(
-                params, filter_level, **histargs)
-            # I am smoothing here to make it more nice!
-            # remove filter level thing now?
-            # cause not really necessary anymore?
-            y = np.convolve(y, np.ones(5)/5, mode='same')
-            # print(y.shape)
-            distributions.append([x, y])
-        self.datasets = np.array(distributions)
+        for i_th, th in enumerate(thresholds):
+            t0 = perf_counter()
+            mod = np.copy(base_model)
+            N, _ = mod.shape
+            if symmetric is True:
+                mod[np.abs(mod) <= th] = 0
 
-    def tail_distributions(self, tail='positive'):
-        r1s = []
-        r2s = []
-        xy_tail = []
-        # xy_negative = []
-        # xy_positive = []
-        for dataset in self.datasets:
-            x = dataset[0, :]
-            y = dataset[1, :]
-            
-            spline = UnivariateSpline(x, y-(np.max(y)/2), s=0)
-            # i maybe want to find a more robust way of
-            # defining the tail?
-            r1, r2 = spline.roots() # find the roots
-            r1s.append(r1)
-            r2s.append(r2)
-            # print(r1, r2)
-            if tail == 'negative':
-                x_tail = x[x <= r1]
-                y_tail = y[x <= r1]
+            trajectories = multichain_sim(
+                        mod, 6, 1, nSamples_eq, nSamples, nChains)
+            with h5py.File(self.fname, 'a') as fout:
+                # print(fout[self.gname][sweep_gname]['trajectories'].shape)
+                fout[self.gname][sweep_gname]['trajectories'][i_th] = (
+                    trajectories)
+            t1 = perf_counter()
+            print(
+                    f'i_th: {i_th} simulating time taken: {t1-t0:.3f}s')
 
-            if tail == 'positive':
-                x_tail = x[x > r2]
-                y_tail = y[x > r2]
-                # x_core
-                # y_core
-                # work out the mean
-                # from a histogram?
-                # this seems unreliable?
-            xy_tail.append(np.array([x_tail, y_tail]))
-        self.datasets = xy_tail
-        return np.array(r1s), np.array(r2s)
+    def subsample(
+            self, no_ss_points):
+        print('Subsampling analysis...')
 
-# namespaces are messing up!
-class NOdata_pipeline:
-    def __init__(self, file_name, group_name, model_name):
-        self.fname = file_name
-        self.gname = group_name
-        self.dname = model_name
+        configs_array = io.get_configurations(self.fname, self.gname)
+        nDatasets,  nSamples, nSpins = configs_array.shape
+        print(nDatasets, nSamples, nSpins)
+        ss_slice_lengths = int(nSamples / no_ss_points)
+        print(ss_slice_lengths)
+        # nDatasets = 2
+        # # no_ss_points = 1
+        possible_sample_indicies = np.arange(0, nSamples, dtype=int)
+        iDs = []
+        Ns = []
+        n_subsamples = []
+        means_J = []
+        stds_J = []
+        for iD in range(0, nDatasets):
+            print(f'--- Dataset: {iD} ---')
+            for i_ss in range(1, no_ss_points + 1):
 
-        with h5py.File(file_name, 'r') as fin:
-            group = fin[group_name]
-            metadata = group[model_name + '_metadata'].asstr()[()]
-            mods = group[model_name][()]
-        # models = models[0:3]
-        # these should really be dictionaries
-        # right?
-        mods_left, mods_right = ma.get_split_hemispheres(mods)
-        self.mods = {
-            'full': mods,
-            'left': mods_left,
-            'right': mods_right}
-        self.mods_means = {
-            'full': np.array([np.mean(mods, axis=0)]),
-            'left': np.array([np.mean(mods_left, axis=0)]),
-            'right': np.array([np.mean(mods_right, axis=0)])}
+                subsample_size = ss_slice_lengths * i_ss
+                print(i_ss, subsample_size, no_ss_points + 1)
+                subsamples = utilities.greedy_subsample(
+                    possible_sample_indicies,
+                    subsample_size
+                )
+                ss_trajectories = utilities.subsampling.get_configurations(
+                    subsamples, configs_array[iD]
+                )
+                # print(subsample_size, ss_trajectories.shape)
+                mod_array, mod_md = inference.multimodel_inf(
+                    ss_trajectories, 6, 0)
+                # print(mod_array.shape, mod_md)
 
-        self.md = metadata
+                # ravel through my things and append each time...
+                n_repeats, _, _ = mod_array.shape
+                for iR in range(0, n_repeats):
+                    iDs.append(iD)
+                    Ns.append(nSpins)
+                    n_subsamples.append(subsample_size)
+                    Js = tools.triu_flat(mod_array[iR, :, :], k=1)
+                    means_J.append(np.mean(Js))
+                    stds_J.append(np.std(Js))
 
-    def get_parameters(self, means_or_individuals):
-        if means_or_individuals == 'means':
-            mods = self.mods_means
-            for mod_array in mods:
-                print('----')
-                print(mod_array.shape)
-                hs, Js = ma.split_parameters(mod_array)
-                print(hs.shape, Js.shape)
-        if means_or_individuals == 'individuals':
-            mods = self.mods
-            for mod_array in mods:
-                print('----')
-                print(mod_array.shape)
-                hs, Js = ma.split_parameters(mod_array)
-                print(hs.shape, Js.shape)
-
-    def transform_to_distributions(
-        self, filter_level, **histargs):
-        distributions = []
-        for params in self.datasets:
-            # print(params.shape)
-            x, y = ma.centered_histogram(
-                params, filter_level, **histargs)
-            # I am smoothing here to make it more nice!
-            # remove filter level thing now?
-            # cause not really necessary anymore?
-            y = np.convolve(y, np.ones(5)/5, mode='same')
-            # print(y.shape)
-            distributions.append([x, y])
-        self.datasets = np.array(distributions)
-
-    def tail_distributions(self, tail='positive'):
-        r1s = []
-        r2s = []
-        xy_tail = []
-        # xy_negative = []
-        # xy_positive = []
-        for dataset in self.datasets:
-            x = dataset[0, :]
-            y = dataset[1, :]
-            
-            spline = UnivariateSpline(x, y-(np.max(y)/8), s=0)
-            # i maybe want to find a more robust way of
-            # defining the tail?
-            r1, r2 = spline.roots() # find the roots
-            r1s.append(r1)
-            r2s.append(r2)
-            # print(r1, r2)
-            if tail == 'negative':
-                x_tail = x[x <= r1]
-                y_tail = y[x <= r1]
-
-            if tail == 'positive':
-                x_tail = x[x > r2]
-                y_tail = y[x > r2]
-                # x_core
-                # y_core
-                # work out the mean
-                # from a histogram?
-                # this seems unreliable?
-            xy_tail.append(np.array([x_tail, y_tail]))
-        self.datasets = xy_tail
-        return np.array(r1s), np.array(r2s)
+        obs_dict = {
+            'iD': iDs,
+            'N': Ns,
+            'B': n_subsamples,
+            'mean_J': means_J,
+            'std_J': stds_J
+        }
+        dataframe = pd.DataFrame(
+            data=obs_dict
+        )
+        print(dataframe)
+        key = self.gname + '/subsampling'
+        print(key)
+        dataframe.to_hdf(self.fname, key=key, mode='a', complevel=5)
+        print('-----------------')
