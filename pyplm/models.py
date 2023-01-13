@@ -50,7 +50,3 @@ def SK_interaction_matrix(N, T, h, jmean, jstd=1):
     # so its all / T when I return it!!
     J = J / T
     return J
-
-
-def exponential():
-    pass

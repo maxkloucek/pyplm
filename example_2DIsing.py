@@ -1,12 +1,5 @@
 import numpy as np
-# import matplotlib.pyplot as plt
 from pyplm.pipelines import data_pipeline
-
-# import glob
-
-# plt.style.use("/Users/mk14423/Dropbox/custom.mplstyle")
-# labels, data = get_sample_trajectories(
-#     '/Users/mk14423/Desktop/PaperData/HCP_data_Ryota/allRest')
 
 file = './2DIsing_example.hdf5'
 group = '2d_ising_N16'
