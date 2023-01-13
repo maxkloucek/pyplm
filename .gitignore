@@ -6,3 +6,4 @@
 # /pyplm/_pycache_
 /build
 /.vscode
+/*.hdf5

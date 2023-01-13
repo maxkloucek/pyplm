@@ -176,9 +176,8 @@ class data_pipeline:
         print('-----------------')
         print(f'Jackknife time taken: = {t1-t0:.3f}s')
 
-    # currently cannot vary alpha across models!
     def ficticiousT_sweep(
-            self, alphas,
+            self, temps,
             nSamples, nChains,
             mod_name='inferredModels'):
         mod_array, _ = io.get_models(
@@ -186,10 +185,10 @@ class data_pipeline:
         # might have to change to corrected Models!
         # for full analysis
         sweep_trajectories = sim.TempSweep(
-                mod_array, alphas, nSamples, nChains)
+                mod_array, temps, nSamples, nChains)
         io.write_sweep_to_hdf5(
             self.fname, self.gname,
-            alphas, sweep_trajectories)
+            temps, sweep_trajectories)
 
     def threshold_sweep(
             self, nSamples, nChains,

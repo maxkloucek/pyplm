@@ -1,5 +1,4 @@
 import numpy as np
-import h5py
 
 from sklearn.linear_model import LogisticRegression
 from joblib import Parallel
@@ -16,11 +15,7 @@ def multimodel_inf(configurations_array, n_jobs, verbose):
     times = np.zeros(nMods)
     # print(infMod_array.shape)
 
-    with Parallel(
-        n_jobs=n_jobs,
-        verbose=verbose,
-        # timeout=72000
-        ) as parallel:
+    with Parallel(n_jobs=n_jobs, verbose=verbose) as parallel:
         for i, configs in enumerate(configurations_array):
             t0 = perf_counter()
             infMod = plm(configs, parallel)
@@ -34,6 +29,7 @@ def multimodel_inf(configurations_array, n_jobs, verbose):
 
     times = np.array(times, dtype=str)
     return infMod_array, times
+
 
 def plm(trajectory, parallel):
     # print(trajectory.shape)
@@ -54,7 +50,7 @@ def logRegLoop_inner(traj, row_index):
     X = np.delete(traj, row_index, 1)
     y = traj[:, row_index]  # target
     log_reg = LogisticRegression(
-        penalty='none',
+        penalty='None',
         # C=10,
         # random_state=0,
         solver='lbfgs',
