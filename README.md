@@ -16,4 +16,5 @@ pip install .
 
 Please see example_2DIsing.py for an overview of how to use the pyplm data_pipeline. All data is stored using the hdf5 file format. To perform some elementary analysis, first run `python example_2DIsing.py`, and then see the  `example_2DIsing_analysis.ipynb` notebook (requires jupyter notebook to be installed).
 
-If you use this package for any scientific purpose then please cite: "Biases in Inverse Ising Estimates of Near-Critical Behaviour".
+If you use this package for any scientific purpose then please cite: 
+https://arxiv.org/abs/2301.05556
