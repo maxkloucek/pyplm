@@ -2,7 +2,7 @@ import numpy as np
 from pyplm import models
 
 
-def test_SK():
+def SK():
     N = 4
     T = 1
     h = 0
@@ -14,4 +14,4 @@ def test_SK():
     assert np.allclose(np.diag(J), h / T)
 
 
-test_SK()
+SK()
