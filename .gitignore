@@ -7,3 +7,9 @@
 /build
 /.vscode
 /*.hdf5
+/.ipynb_checkpoints
+/.ipynb_checkpoints/*
+# /outputs
+/outputs/*
+/inference/__pycache__
+/inference/__pycache__/*

@@ -50,7 +50,7 @@ def logRegLoop_inner(traj, row_index):
     X = np.delete(traj, row_index, 1)
     y = traj[:, row_index]  # target
     log_reg = LogisticRegression(
-        penalty='None',
+        penalty='none',
         # C=10,
         # random_state=0,
         solver='lbfgs',

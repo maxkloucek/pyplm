@@ -98,12 +98,12 @@ def write_sweep_to_hdf5(
             dtype=temps.dtype,
             compression="gzip")
         alphas_ds[()] = temps
-
+        # print('made it!')
         sweep_ds = group.require_dataset(
             "sweep-trajectories",
             shape=sweep_trajectories.shape,
             dtype=sweep_trajectories.dtype,
-            compression="gzip", compression_opts=9)
+            compression="gzip", compression_opts=5)
         sweep_ds[()] = sweep_trajectories
 
 

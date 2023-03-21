@@ -14,7 +14,7 @@ from pyplm import utilities
 from pyplm.simulate import multichain_sim
 
 
-class data_pipeline:
+class plm_pipeline:
     def __init__(self, file_name, group_name):
         self.fname = file_name
         self.gname = group_name
@@ -37,7 +37,7 @@ class data_pipeline:
                 model = models.ising_interaction_matrix_2D_PBC(**mod_args)
                 mod_array.append(model)
             elif mod_choice == 'SK':
-                model = models.SK_interaction_matrix(**mod_args)
+                model = models.generate_SK_model(**mod_args)
                 mod_array.append(model)
             else:
                 print(

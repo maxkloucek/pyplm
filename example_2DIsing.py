@@ -1,7 +1,7 @@
 import numpy as np
-from pyplm.pipelines import data_pipeline
+from pyplm.pipeline import plm_pipeline
 
-file = './2DIsing_example.hdf5'
+file = './outputs/2DIsing_example.hdf5'
 group = '2d_ising_N25'
 
 # pipeline is designed to perform inference on multiple models
@@ -14,7 +14,7 @@ mod_args = [{'L': 5, 'T': T, 'h': 0, 'jval': 1} for T in Ts]
 sim_args = [{'B_eq': 2e3, 'B_sample': 1e3, 'nChains': 6} for _ in Ts]
 
 # initialise pipeline
-plm_pipeline = data_pipeline(file, group)
+plm_pipeline = plm_pipeline(file, group)
 
 # generate model, and simulate data
 plm_pipeline.generate_model(mod_choices, mod_args)
