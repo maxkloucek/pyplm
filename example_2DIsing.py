@@ -17,7 +17,7 @@ sim_args = [{'B_eq': 2e3, 'B_sample': 1e3, 'nChains': 6} for _ in Ts]
 plm_pipeline = plm_pipeline(file, group)
 
 # generate model, and simulate data
-plm_pipeline.generate_model(mod_choices, mod_args)
+plm_pipeline.generate_models(mod_choices, mod_args)
 plm_pipeline.simulate_data(sim_args, n_jobs=6)
 
 # alternatively, add data manualy to pipeline.

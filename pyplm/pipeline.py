@@ -15,14 +15,46 @@ from pyplm.simulate import multichain_sim
 
 
 class plm_pipeline:
+    """
+    Main class for performing pseudo-likelihood maximisation (PLM).
+    Includes functionality for model generation, data simulation,
+    inference, and bias correction. This pipeline is setup to run
+    for mutiple models, but can be used for a single model as well.
+    """
     def __init__(self, file_name, group_name):
+        """
+        Initialise PLM pipeline class.
+
+        Args:
+            file_name (str): path to hdf5 file
+            group_name (str): name of group in hdf5 file
+
+        Returns:
+            None
+        """
+
         self.fname = file_name
         self.gname = group_name
         os.makedirs(os.path.dirname(self.fname), exist_ok=True)
 
-    def generate_model(
+    def generate_models(
             self, mod_choices, mod_args_list,
             mod_name='inputModels'):
+        """
+        Generate models and save to hdf5 file.
+
+        Args:
+            mod_choices (list): list of model choices
+            mod_args_list (list): list of model arguments
+            mod_name (str): name of group in hdf5 file models are saved to
+
+        Returns:
+            None
+
+        Raises:
+            ValueError: if length of mod_choices and mod_args_list are not equal
+        """
+
         # "inputModels"
         if len(mod_choices) != len(mod_choices):
             print('length of choices and args are missmatched!')
@@ -59,6 +91,19 @@ class plm_pipeline:
         # return mod_array, mod_metadata_array
 
     def simulate_data(self, sim_args_list, n_jobs=-1, verbose=5):
+        """
+        Simulate data (using Monte Carlo sampling) and save to hdf5 file.
+        Uses models contained in 'inputModels' group of hdf5 file.
+
+        Args:
+            sim_args_list (list): list of simulation arguments
+            n_jobs (int): number of parallel jobs to run
+            verbose (int): verbosity of joblib.parallel class
+
+        Returns:
+            None
+        """
+
         print('-Simulating Data-')
         mod_array, mod_md = io.get_models(
             self.fname, self.gname, 'inputModels')
@@ -80,6 +125,17 @@ class plm_pipeline:
     # expects an extra frist dimension, incase multiple runs # labels!
     def write_data(self, datasets, labels):
         print(self.fname)
+        """
+        Write configuration data to hdf5 file.
+
+        Args:
+            datasets (list): list of datasets
+            labels (list): list of labels
+
+        Returns:
+            None
+        """
+
         io.write_configurations_to_hdf5(
             self.fname,
             self.gname,
@@ -90,6 +146,19 @@ class plm_pipeline:
             self,
             nParallel_jobs=6, Parallel_verbosity=0,
             mod_name='inferredModels'):
+        """
+        Perform PLM inference and save to hdf5 file.
+        Uses data stored in 'configurations' group of hdf5 file.
+
+        Args:
+            nParallel_jobs (int): number of parallel jobs to run
+            Parallel_verbosity (int): verbosity of joblib.parallel class
+            mod_name (str): name of group in hdf5 file models are saved to
+
+        Returns:
+            None
+        """
+
         get_reusable_executor().shutdown(wait=True)
         print('---Running PLM---')
         t0 = perf_counter()
@@ -112,6 +181,19 @@ class plm_pipeline:
             self,
             nParallel_jobs=6, Parallel_verbosity=0,
             mod_name='firthModels'):
+        """
+        Perform Firth correction and save to hdf5 file.
+        Uses data stored in 'configurations' group of hdf5 file.
+
+        Args:
+            nParallel_jobs (int): number of parallel jobs to run
+            Parallel_verbosity (int): verbosity of joblib.parallel class
+            mod_name (str): name of group in hdf5 file models are saved to
+
+        Returns:
+            None
+        """
+
         get_reusable_executor().shutdown(wait=True)
         print('---Running Firth Correction ---')
         t0 = perf_counter()
@@ -132,6 +214,16 @@ class plm_pipeline:
 
     def correct_C2(
             self, mod_name='c2Models'):
+        """
+        Perform self-consistency (C2) correction and save to hdf5 file.
+
+        Args:
+            mod_name (str): name of group in hdf5 file models are saved to
+
+        Returns:
+            None
+        """
+
         print('Running C2 Correction')
         t0 = perf_counter()
         infmod_array, _ = io.get_models(
@@ -157,6 +249,16 @@ class plm_pipeline:
     def correct_jackknife(
             self, mod_name='correctedModels_jacknife'):
         print('Running Jacknife Correction')
+        """
+        Perform jacknife correction and save to hdf5 file.
+
+        Args:
+            mod_name (str): name of group in hdf5 file models are saved to
+
+        Returns:
+            None
+        """
+
         t0 = perf_counter()
         infmod_array, _ = io.get_models(
             self.fname, self.gname, 'inferredModels')
@@ -182,8 +284,20 @@ class plm_pipeline:
             mod_name='inferredModels'):
         mod_array, _ = io.get_models(
             self.fname, self.gname, mod_name)
-        # might have to change to corrected Models!
-        # for full analysis
+        """
+        Perform ficticious temperature sweep and save to hdf5 file.
+
+        Args:
+            temps (np.array): array of temperatures to sweep over
+            nSamples (int): number of samples drawn from each chain
+            at each temperature
+            nChains (int): number of chains to run at each temperature
+            mod_name (str): name of hdf5 model group to simulate
+
+        Returns:
+            None
+        """
+
         sweep_trajectories = sim.TempSweep(
                 mod_array, temps, nSamples, nChains)
         io.write_sweep_to_hdf5(

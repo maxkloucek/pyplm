@@ -1,3 +1,5 @@
+[![CodeFactor](https://www.codefactor.io/repository/github/maxkloucek/pyplm/badge)](https://www.codefactor.io/repository/github/maxkloucek/pyplm)
+
 ## PyPLM: a Pseudo-Likelihood Maximization (PLM) python package
 
 This python package implements the Pseudo-Likelihood Maximization (PLM) technique to solve the inverse Ising problem (equivalently known as pairwise Maximum Entropy modelling). The method allows the interaction network of systems of binary variables to be reconstructed, and relies on performing logistic regression.
