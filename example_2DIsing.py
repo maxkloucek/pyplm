@@ -14,21 +14,21 @@ mod_args = [{'L': 5, 'T': T, 'h': 0, 'jval': 1} for T in Ts]
 sim_args = [{'B_eq': 2e3, 'B_sample': 1e3, 'nChains': 6} for _ in Ts]
 
 # initialise pipeline
-plm_pipeline = plm_pipeline(file, group)
+pipeline = plm_pipeline(file, group)
 
 # generate model, and simulate data
-plm_pipeline.generate_models(mod_choices, mod_args)
-plm_pipeline.simulate_data(sim_args, n_jobs=6)
+pipeline.generate_models(mod_choices, mod_args)
+pipeline.simulate_data(sim_args, n_jobs=6)
 
 # alternatively, add data manualy to pipeline.
 # Data-object has to be numpy array, shape (nModels, B, N)
 # nModels: no. models, B: no. samples, N: no. spins
-# plm_pipeline.write_data(data, labels)
+# pipeline.write_data(data, labels)
 
 # inference options
-plm_pipeline.infer(Parallel_verbosity=5)  # performs PLM inference
-plm_pipeline.correct_firth(mod_name='firthModels')  # Firth's correction
-plm_pipeline.correct_C2(mod_name='c2Models')  # self-consistency correction
+pipeline.infer(Parallel_verbosity=5)  # performs PLM inference
+pipeline.correct_firth(mod_name='firthModels')  # Firth's correction
+pipeline.correct_C2(mod_name='c2Models')  # self-consistency correction
 
-plm_pipeline.ficticiousT_sweep(
+pipeline.ficticiousT_sweep(
     np.linspace(0.1, 3, 100), 5e3, 6)

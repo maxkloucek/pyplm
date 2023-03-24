@@ -1,8 +1,10 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='pyplm',
-    version='0.2.0',
+    name='pseudolm',
+    version='1.0.0',
+    description='Python package to perfrom psuedo-likelihood maximisation inference on Ising models',
+    classifiers=['Topic :: Scientific/Engineering :: Physics',],
     packages=find_packages(
         # where='inference',
         include=['pyplm', 'pyplm.*']),

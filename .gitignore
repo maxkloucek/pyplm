@@ -5,6 +5,7 @@
 /*/*/__pycache__
 # /pyplm/_pycache_
 /build
+/dist
 /.vscode
 /*.hdf5
 /.ipynb_checkpoints
