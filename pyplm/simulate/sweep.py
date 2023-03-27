@@ -1,8 +1,8 @@
 # do the temperature sweep
 import numpy as np
-import matplotlib.pyplot as plt
 from pyplm.simulate import multichain_sim
 import pyplm.simulate.basemc as mc
+
 
 def TempSweep(mod_array, alphas, nSamples, nChains):
     nModels, nSpins, _ = mod_array.shape
@@ -19,7 +19,7 @@ def TempSweep(mod_array, alphas, nSamples, nChains):
         dtype=np.int8
         )
     print(sweep_trajectories.shape, sweep_trajectories.dtype)
-    for iMod, mod in enumerate(mod_array):        
+    for iMod, mod in enumerate(mod_array):  
         for iAlpha, alpha in enumerate(alphas):
             trajectories = multichain_sim(
                     mod / alpha, 6, 1, 1e4, nSamples, nChains)
