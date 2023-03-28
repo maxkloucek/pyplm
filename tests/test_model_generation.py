@@ -29,3 +29,7 @@ def test_SK():
     assert J.shape == (N, N)
     assert np.allclose(J, J.T)
     assert np.allclose(np.diag(J), h / T)
+
+
+# def test_all():
+# need to add seed for the random number generator to test properly
