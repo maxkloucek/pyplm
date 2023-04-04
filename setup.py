@@ -1,10 +1,17 @@
 from setuptools import setup, find_packages
 
+from pathlib import Path
+this_directory = Path(__file__).parent
+long_description = (this_directory / "README.md").read_text()
+
+
 setup(
     name='pseudolm',
-    version='1.0.0',
+    version='1.0.1',
+    long_description=long_description,
+    long_description_content_type='text/markdown',
     description='Python package to perfrom psuedo-likelihood maximisation inference on Ising models',
-    classifiers=['Topic :: Scientific/Engineering :: Physics',],
+    classifiers=['Topic :: Scientific/Engineering :: Physics', ],
     packages=find_packages(
         # where='inference',
         include=['pyplm', 'pyplm.*']),

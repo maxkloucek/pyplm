@@ -33,3 +33,4 @@ def test_SK():
 
 # def test_all():
 # need to add seed for the random number generator to test properly
+# test without read writign!

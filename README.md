@@ -4,14 +4,23 @@
 
 This python package implements the Pseudo-Likelihood Maximization (PLM) technique to solve the inverse Ising problem (equivalently known as pairwise Maximum Entropy modelling). The method allows the interaction network of systems of binary variables to be reconstructed, and relies on performing logistic regression.
 
-PyPLM is structured around a single pipeline (the data_pipeline), which allows data to be generated and inferred. PyPLM also implements Firth's logistic regression penalty.
+PyPLM is structured around a single pipeline (the data_pipeline), which allows data to be generated and inferred. This object is accessed using ```from pyplm.pipeline import plm_pipeline```. PyPLM also implements Firth's logistic regression penalty.
 
 ### Installation
 
+To install from source, run the following commands:
 ```
 git clone https://github.com/maxkloucek/pyplm.git
 cd pyplm
 pip install .
+```
+
+OR
+
+To install latest release from PyPI, run
+
+```
+pip install pseudolm
 ```
 
 ### Usage Examples
