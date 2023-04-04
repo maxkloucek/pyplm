@@ -23,6 +23,8 @@ To install latest release from PyPI, run
 pip install pseudolm
 ```
 
+See https://pypi.org/project/pseudolm/ for more details.
+
 ### Usage Examples
 
 Please see example_2DIsing.py for an overview of how to use the pyplm data_pipeline. All data is stored using the hdf5 file format. To perform some elementary analysis, first run `python example_2DIsing.py`, and then see the  `example_2DIsing_analysis.ipynb` notebook (requires jupyter notebook to be installed).
