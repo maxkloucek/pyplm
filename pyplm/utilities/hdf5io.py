@@ -50,6 +50,7 @@ def get_models(file_name, group_name, mod_name):
 # maybe I should always have this check? nah
 def write_configurations_to_hdf5(
         file_name, group_name, datasets, labels):
+    # file_name, group_name need to be numy arrays!
     if os.path.exists(file_name) is True:
         fopen_kwrds = {
             'mode': 'a',

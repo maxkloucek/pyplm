@@ -52,7 +52,7 @@ class plm_pipeline:
             None
 
         Raises:
-            ValueError: if length of mod_choices and mod_args_list are not equal
+            ValueError: if len of mod_choices and mod_args_list are not equal
         """
 
         # "inputModels"
